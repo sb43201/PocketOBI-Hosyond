@@ -1,0 +1,418 @@
+> **Hosyond 2.8-inch port:** see [HOSYOND.md](HOSYOND.md) for build, upload, wiring and touch calibration. Default PlatformIO environment: `hosyond-cyd28`.
+
+<div align="center">
+
+<img src="docs/logo.png" alt="PocketOBI logo" width="480">
+
+**A standalone, screen-based reader and diagnostic tool for Makita LXT (18V) batteries** — no PC required.
+
+[![Release](https://img.shields.io/github/v/release/TheRepairforge/PocketOBI?label=release&color=2f81f7)](https://github.com/TheRepairforge/PocketOBI/releases)
+[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/license-PolyForm--NC--1.0.0-blue)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-ESP32--C3%20%7C%20CYD-lightgrey)](#hardware)
+[![Build with](https://img.shields.io/badge/build-Arduino%20%7C%20PlatformIO-blue)](#build--flash)
+
+[Website](https://therepairforge.github.io/pocketobi/) · [Platform family](#platform-family) · [Watch it in action](#-watch-it-in-action) · [Status](#project-status) · [Features](#features) · [Hardware](#hardware) · [Build & flash](#build--flash) · [License](#license)
+
+</div>
+
+---
+
+It reads cell voltages, temperatures, charge count and error/lock state, and
+can reset false BMS lockouts to rescue packs that are still good.
+
+PocketOBI is a standalone **OBI client**: it speaks the same Makita OneWire
+protocol documented by the [Open Battery Information](https://github.com/mnh-jansson/open-battery-information)
+project, but as a self-contained handheld device with a TFT screen and a
+rotary encoder instead of a computer.
+
+Created by **The Repair Forge** — website: https://therepairforge.github.io/ — follow the build on YouTube:
+https://www.youtube.com/channel/UCQL_-pcIEkrDPyljl3QPzcw
+
+## Platform family
+
+PocketOBI started on Makita LXT (18V) — this repo — and is growing into a small
+family of standalone OBI-client readers, one per battery platform. Same
+hardware/UI approach, same protocol-first philosophy, different pack connector
+and decode tables under the hood.
+
+| Platform | Tag | Status |
+|---|---|---|
+| Makita LXT (18V) | ![LXT](https://img.shields.io/badge/-LXT-f4611c) | ✅ shipping — this repo |
+| Makita XGT (40V) | ![XGT](https://img.shields.io/badge/-XGT-2563eb) | 🔜 planned |
+| HiKOKI (BSL) | ![BSL](https://img.shields.io/badge/-BSL-16a34a) | 🚧 in progress |
+
+Each sibling gets its own repo once it's ready to publish; this table (and its
+own release badge) grows as they ship.
+
+## 📺 Watch it in action
+
+[![PocketOBI v2 on YouTube](https://img.youtube.com/vi/8Qe2dTXrJ8g/hqdefault.jpg)](https://youtu.be/8Qe2dTXrJ8g)
+
+The **v2** walkthrough — the new interface, the traffic-light verdict and the staged
+repair wizard in action:
+**https://youtu.be/8Qe2dTXrJ8g**
+
+Original build & protocol deep-dive — how it works, the reverse-engineering, and a live demo:
+**https://youtu.be/57KsQQ7-Qd0**
+
+## Project status
+
+Current release: see the **[latest release](https://github.com/TheRepairforge/PocketOBI/releases/latest)** and [CHANGELOG.md](CHANGELOG.md) for details.
+
+The **v2** interface: a 2×2 launcher, a paged Battery view, a
+traffic-light verdict and a staged Repair wizard, multilingual EN/FR/DE/ES, on a
+single-source build. Validated on real BL18xx packs. Since **v2.2** the same firmware
+also runs on the **CYD** (ESP32-2432S028R) with a touch UI, as an
+[alternative board](#alternative-board-cyd-esp32-2432s028r). Since **v2.3** every release ships ready-to-flash
+binaries, and since **v2.5** an [Asia build](#asia-build-日本語--한국어--help-wanted) shows the UI
+in Japanese, Korean and Vietnamese. Feedback and test reports
+(especially serial logs from real packs) are very welcome.
+
+> ⚠️ **Safety first.** These packs contain lithium cells and up to ~21 V on
+> B+. **Never connect B+ to the ESP32.** Resetting a BMS error only helps a
+> pack whose cells are actually healthy (a false lockout). Do **not** force a
+> pack with a genuinely bad/low cell back into service — it is a fire risk.
+> Use this tool at your own risk.
+
+## Features
+
+- **Standalone V2 interface** — a 2×2 launcher (Battery / Repair / Tools / About)
+  driven by the rotary encoder (+ a secondary back button: short = back, long = home);
+  the pack is read on demand, when you open Battery or Repair.
+- **Battery view, paged** (turn the encoder): Overview / Health / Identity.
+  - *Overview*: per-cell voltage bars (green / yellow / red), pack voltage, spread.
+  - *Health*: our own cycle-based Condition estimate, over-discharge / over-load wear
+    counters, cell min/max + spread, both temperature sensors + spread.
+  - *Identity*: model, charge count, manufacturing date, capacity, and the pack
+    **serial number** (ROM ID in Makita 16-char hex format).
+- **Traffic-light verdict** — HEALTHY (green) / UNLOCK (yellow) / POSSIBLE HW FIX
+  (orange) / HARDWARE FIX (red). One verdict, computed from a single source and shown
+  identically on the Battery tile, the screens and the Repair wizard.
+- **Repair wizard** — a staged, feasibility-first check: comms → hardware faults
+  (broken sense wire / weak group / imbalance / thermistor, each naming the group or
+  sensor) → charger lock + prognosis (a false lockout: "our unlock should hold"; a pack
+  that re-locks after the unlock has a real fault). A hardware fault blocks the unlock;
+  the prognosis reads as guidance, never a guarantee.
+- **Unlock / repair** — rewrites the frame to lift a *false* charger lockout on a
+  pack whose cells are healthy: clears the charger-lock nybble, recomputes the
+  charger-validated checksums, writes the frame back. Never forces a genuinely bad
+  pack back into service. See below.
+- **Error reset** with before → after feedback (full test-mode + power-cycle sequence).
+- Automatic detection of standard vs older **F0513** BMS generations.
+- **Multilingual UI** — English, French, German, Spanish, and **Japanese** in the
+  Japanese build (see below).
+- **PC bridge mode** — acts as a USB↔OneWire adapter (drop-in ArduinoOBI), so a desktop
+  app works through PocketOBI: the original *Open Battery Information* app, or our own
+  companion **[PackScope](https://github.com/TheRepairforge/PackScope)** — saved history,
+  a health estimate and a guided repair workflow. Dual use: standalone tester **and** PC adapter.
+- Tools: pack LED test, error reset, raw debug view (ROM ID + message frame).
+
+## Asia build: 日本語 / 한국어 — help wanted
+
+The **Asia build** of the firmware shows the whole UI in Japanese, Korean or Vietnamese, with
+English kept to find your way (Settings → Language → EN / JA / KO / VI; French, German and
+Spanish are in the standard build). The Japanese and Korean texts are **first drafts that no
+native speaker has reviewed**: expect stiff phrasing and some wrong repair vocabulary. I read
+neither language, so I cannot judge them myself. The Vietnamese one was written by a
+Vietnamese user, without accents (the device fonts have none).
+
+**If you read Japanese or Korean and work on power tools or batteries, I would love your
+help.** Each language is one file, [`strings_ja.h`](strings_ja.h) and [`strings_ko.h`](strings_ko.h):
+one line per message, with the English next to it. Open a pull request, or an
+[issue](../../issues/new?template=translation.yml) with corrections, no Git needed. You can see
+your text on every screen without a board with [`tools/hostsim`](tools/hostsim/README.md).
+Rules and details: [docs/TRANSLATING.md](docs/TRANSLATING.md).
+
+Build it with `pio run -e esp32-c3-asia` (or `cyd-asia`), or in the Arduino IDE by putting
+`#define ENABLE_CJK 1`, `#define ENABLE_EU 0` and `#define ENABLE_VI 1` in a local `board_local.h`
+next to the sketch.
+
+## Architecture
+
+[<img src="docs/architecture.png" alt="PocketOBI architecture diagram" width="480">](docs/architecture.png)
+
+*(click for full size — full-resolution file in [`docs/architecture.png`](docs/architecture.png))*
+
+From the battery up: the Makita pack speaks over a single data wire; the bundled
+**OneWire2** driver (reused from OBI) handles the custom Makita bit timings; the
+ESP32-C3 firmware is layered — protocol (frames + ENABLE, pack-type detection),
+data decode (bytes → cells / temperature / errors / lock), display (Adafruit GFX
++ ST7789) and a small UI state machine — driving the TFT and, optionally, a USB
+PC bridge.
+
+## Hardware
+
+| Component | Notes |
+|---|---|
+| ESP32-C3 SuperMini | any ESP32-C3 board with native USB |
+| 2.4" SPI TFT, ST7789 (240×320) | + integrated EC11 rotary encoder module |
+| Makita BL1830 LXT adapter | clips onto the 18V pack |
+| 2 × 470 Ω resistors | pull-ups for DATA and ENABLE (4.7 kΩ also works with short wiring) |
+| USB-C power (power bank/charger) | powers the tool — NOT the battery |
+
+### Wiring
+
+[<img src="docs/wiring.png" alt="PocketOBI wiring diagram" width="560">](docs/wiring.png)
+
+*(click for full size — full-resolution file in [`docs/wiring.png`](docs/wiring.png))*
+
+**Display + encoder module (2-in-1 TFT + EC11):**
+
+| ESP32-C3 | Module pin | Role |
+|---|---|---|
+| GPIO0  | SCL  | SPI clock |
+| GPIO1  | SDA  | SPI data (MOSI) |
+| GPIO10 | RES  | reset |
+| GPIO20 | DC   | data / command select |
+| GPIO21 | CS   | chip select (active low) |
+| 3.3 V  | VCC  | logic power |
+| 3.3 V  | BLK  | backlight (or leave unconnected = always on) |
+| GND    | GND  | ground |
+| GPIO5  | A    | encoder phase A |
+| GPIO6  | B    | encoder phase B |
+| GPIO7  | PUSH | encoder push button |
+| GPIO2  | KO   | secondary button (short = back, long = home) |
+
+**Battery adapter (Makita LXT connector):**
+
+| ESP32-C3 | Battery pin | Role |
+|---|---|---|
+| GPIO3 + 470 Ω pull-up to 3.3 V | Pin 2 — **DATA** | OneWire data |
+| GPIO4 + 470 Ω pull-up to 3.3 V | Pin 6 — **ENABLE** | enable (active high) |
+| GND | main **B-** terminal | ground (sturdier than signal pin 5; same ground) |
+| — | Pin 1 — **B+ (18 V)** | **NEVER CONNECT** |
+
+Notes:
+- **Pull-ups:** **470 Ω** is the bench-validated value: on 3.3 V logic the pack
+  loads the DATA line near the input threshold, and 4.7 kΩ was marginal with
+  breadboard wiring. 4.7 kΩ (the upstream OBI value) should be fine with short,
+  clean wiring. ENABLE is a driven output; 470 Ω there just keeps a single-value BOM.
+- ⚠️ **Identify DATA/ENABLE by the ESP32 silkscreen labels ("3" / "4"), not by
+  the adapter's connector position.** Some AliExpress adapters number their orange
+  connector from the opposite end, so DATA can land on what looks like "plot 6"
+  and ENABLE on "plot 2". Wrong plots = no comms (present = 0, all-`FF`/`00`).
+- Power the tool from **USB-C**, never from the Makita pack (B+ is 18 V, and the
+  BMS can cut its own output on error).
+
+A carrier PCB has been **fabricated and bench-validated**. The fabrication files
+(Gerbers, schematic PDF, BOM) and ordering notes are in [`hardware/`](hardware/); the
+wiring and pinout reference stays in [HARDWARE.md](HARDWARE.md).
+
+### Alternative board: CYD (ESP32-2432S028R)
+
+Since v2.2 the firmware also builds for the "Cheap Yellow Display" (dual-USB / ST7789
+revision, XPT2046 resistive touch). Same logic, same screens; the UI is driven by
+touch instead of the encoder, with on-device touch calibration (Settings > Calibrate).
+The ESP32-C3 build above remains the reference product.
+
+The whole pack connection fits on the CYD's 4-pin **CN1** header:
+
+| CN1 | Battery pin | Role |
+|---|---|---|
+| IO22 + 470 Ω pull-up to 3V3 | Pin 2 — **DATA** | OneWire data |
+| IO27 + 470 Ω pull-up to 3V3 | Pin 6 — **ENABLE** | enable (active high) |
+| GND | main **B-** terminal | ground |
+| 3V3 | — | feeds the two pull-ups |
+| — | Pin 1 — **B+ (18 V)** | **NEVER CONNECT** |
+
+Step-by-step guide (build, flash, wiring, first read): [docs/CYD_GUIDE.md](docs/CYD_GUIDE.md).
+Board selection and build notes: [CYD_NOTES.md](CYD_NOTES.md).
+
+## Build & flash
+
+### Flash a prebuilt binary (no build)
+
+Easiest: the [web flasher](https://therepairforge.github.io/pocketobi/#flash) flashes the latest
+release over USB from Chrome or Edge on a computer, nothing to install.
+
+Or by hand: each [release](https://github.com/TheRepairforge/PocketOBI/releases/latest) carries one
+merged image per board and language, flashed at address `0x0`:
+
+| File | Board |
+|---|---|
+| `PocketOBI-vX.Y.Z-esp32-c3.bin` | ESP32-C3 (the reference product) |
+| `PocketOBI-vX.Y.Z-cyd.bin` | CYD (ESP32-2432S028R) |
+| `PocketOBI-vX.Y.Z-esp32-c3-asia.bin` / `-cyd-asia.bin` | Same boards, Asia build (EN / JA / KO / VI; `-ja` up to v2.3.1) |
+| `PocketOBI-vX.Y.Z-cyd-ili9341.bin` | CYD fitted with an ILI9341 panel (mirrored image on the plain CYD build, see the [CYD guide](docs/CYD_GUIDE.md)) |
+
+```bash
+pip install esptool
+esptool --chip esp32c3 write_flash 0x0 PocketOBI-vX.Y.Z-esp32-c3.bin   # ESP32-C3
+esptool --chip esp32 write_flash 0x0 PocketOBI-vX.Y.Z-cyd.bin          # CYD
+```
+
+A merged image flashed this way resets the saved settings (language, flip, touch calibration):
+set them again afterwards. The web flasher keeps them unless you tick "Erase device". If a CYD
+flash stops halfway, add `--baud 115200`.
+
+Older esptool versions are called `esptool.py`. Check a download against `SHA256SUMS.txt`
+from the same release. The `parts-*.zip` files hold the separate bootloader, partition
+table and application images for tools that want them.
+
+### Arduino IDE
+
+1. Install the **ESP32 board package** (Espressif) via the Boards Manager.
+
+   > **Use a stable core (3.x).** PocketOBI is built and tested against the
+   > **stable ESP32 core 3.x** (2.0.x also works). Avoid the **alpha/dev
+   > releases** (e.g. `4.0.0-alpha1`): they build fine but flood the console
+   > with harmless `-Wdeprecated-declarations` / `-Wmissing-field-initializers`
+   > warnings coming from *the core itself* (`esp32-hal-ledc.c`, `Esp.cpp`, …),
+   > not from PocketOBI. If you see those warnings, it is the alpha core, not a
+   > bug here — select a 3.x version in the Boards Manager.
+
+2. Install these libraries via the Library Manager:
+   - Adafruit GFX Library
+   - Adafruit ST7735 and ST7789 Library
+   - RotaryEncoder (by Matthias Hertel)
+   - (OneWire2 is bundled in this repo — nothing to install.)
+3. Open `PocketOBI/PocketOBI.ino`.
+4. Board: **ESP32C3 Dev Module**, USB CDC On Boot: **Enabled**.
+5. Upload.
+
+**CYD build (Arduino IDE):** also install **XPT2046_Touchscreen** (Paul Stoffregen,
+v1.4), select **ESP32 Dev Module**, and put a `board_local.h` next to the sketch
+containing `#define POCKETOBI_BOARD BOARD_CYD` (the file is gitignored).
+
+> Note: Arduino requires the sketch to live in a folder named `PocketOBI`.
+> If you downloaded a ZIP (GitHub adds a `-main` suffix), rename the inner
+> sketch folder back to `PocketOBI` before opening it.
+
+### PlatformIO (VS Code)
+
+The `platformio.ini` at the repo root builds the **same sources** the Arduino IDE
+uses, straight from the sketch folder — no separate project, no copy to keep in sync:
+
+```bash
+pio run -e esp32-c3             # build the ESP32-C3 product
+pio run -e esp32-c3 -t upload   # build + flash
+pio run -e cyd -t upload        # CYD alternative board
+pio device monitor              # serial monitor (115200)
+```
+
+There is one env per board; always pass `-e`, otherwise `pio run -t upload` builds and
+flashes every env in turn. The `esp32-c3` env uses `esp32-c3-devkitm-1` (works for the
+ESP32-C3 SuperMini); change `board` in that env for a different ESP32-C3 module.
+
+## Usage
+
+Power the tool over USB and connect DATA / ENABLE / GND to the pack (never B+).
+It boots to the launcher: **Battery / Repair / Tools / About**. Turn the encoder to
+select, click to open; the back button goes back, a long press returns to the launcher.
+The footer of each screen names what the inputs do there. On the CYD: tap an item, tap
+the title bar to go back.
+
+- **Battery** reads the pack when you open it. Turn to change page (Overview / Health /
+  Identity), click to read again. Until a pack has been read, the launcher tile shows
+  "NO PACK"; after a read it shows the pack voltage and the verdict.
+- **Repair** reads the pack and shows the diagnosis. If there is a lockout to clear and
+  no hardware fault, it asks "Unlock pack?" before anything is written: click confirms,
+  turning cancels.
+- **Tools** has two pages: PC bridge, Debug / raw, Settings; then Pack LEDs on, Pack LEDs
+  off, Reset error (marked "Write": they send a command to the pack).
+
+"Comm error" (NO RESPONSE) means the pack did not answer: check the DATA wiring, the
+pull-ups and GND, and re-seat the pack. A pack that never answers (all-`0xFF`) has a
+dead BMS or is not an OBI-compatible pack.
+
+Trouble reading a pack, or connecting the PC bridge? See
+**[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** — a step-by-step guide to wiring,
+no-comms and bridge-connection faults.
+
+## Unlock / repair
+
+Some packs refuse to charge even though their cells are healthy and balanced:
+the BMS stores a frame that trips the charger's lock. The Makita charger only
+validates **three** fields of the 32-byte frame:
+
+- **nybble 34** (byte 17, low) — the charger lock, must be `0`;
+- **CS0** (nybble 41) — `sum(nybbles 0–15) & 0x0F`;
+- **CS2** (nybble 43) — `sum(nybbles 32–40) & 0x0F`.
+
+The status byte (byte 19, e.g. `0xA5`) and the reported temperatures are **not**
+part of that check. The battery's own internal lock additionally checks **CS1**
+(nybbles 16–31, per the rosvall protocol docs), so the repair recomputes all
+three checksums. The Unlock / repair menu entry clears nybble 34, recomputes
+CS0/CS1/CS2, writes the frame back (arm → write → store) and clears the internal
+error register. The failure code (nybble 40, e.g. `0xF` = dead) is **never**
+cleared — a genuinely dead pack is not forced back into service. Manufacturing/status bytes are never touched, and if the frame
+is already valid no write is performed.
+
+> ⚠️ This **writes to the BMS flash** and is gated behind a confirmation screen.
+> It only clears a *false* charger lockout on an otherwise-healthy pack; it never
+> overrides the BMS's own fault protection. Never use it to force a pack with a
+> bad or low cell back into service.
+
+## Note on temperature units
+
+Temperatures are decoded as **1/10 K** (`T_C = raw / 10 - 273.15`). This is now
+corroborated by four independent sources: the
+[rosvall protocol docs](https://codeberg.org/rosvall/makita-lxt-protocol), the
+obi-esp32 encoding, and both sides of the
+[m5din-makita](https://github.com/no-body-in-particular/m5din-makita) fork — its
+reader (`(raw / 10) - 273.15`) *and* its BMS emulator (`(T_C + 273.15) * 10`).
+The original Open Battery Information app decodes the same field as
+**Celsius x100**; that appears to be the outlier. The unit is still not stated in
+any official Makita document, so treat the absolute value as approximate, but the
+1/10 K interpretation is the well-supported one. The dependable signal is *relative*: the
+two sensors are shown side by side (e.g. `28/31`, and in red when a value is
+implausible), so a reading that is far off or that disagrees strongly with the
+other flags a likely faulty thermistor.
+
+The two sensors are reported by the BMS over the data line (there is **no
+separate thermistor pin** on the connector). The original protocol simply labels
+them **"Sensor 1"** and **"Sensor 2"**. PocketOBI treats sensor 1 as the cell sensor
+and sensor 2 as the board (MOSFET) sensor, and labels them **Cell/Board** in that
+order. That identification is our own observation, not a Makita document, and the
+exact placement of the sensors on the BMS board is not known.
+
+## Versioning
+
+See [CHANGELOG.md](CHANGELOG.md). The current version is shown on the
+boot splash and the About screen, and defined as `FW_VERSION` in `pocketobi.h`.
+
+## Credits
+
+- **Open Battery Information** by **Martin Jansson** — the original project that
+  documents the Makita protocol and provides the OneWire2 library.
+  https://github.com/mnh-jansson/open-battery-information (MIT)
+- ESP32-C3 wiring reference: the `obi-esp32` port by appositeit.
+- Root protocol reverse-engineering: the
+  [rosvall/makita-lxt-protocol](https://codeberg.org/rosvall/makita-lxt-protocol)
+  documentation (frame byte/nybble map, the three checksum ranges, per-type
+  command sets) — the origin much of the LXT decoding traces back to.
+- Unlock / frame-repair research: the
+  [synrais/Makita-LXT-Battery-Monitor-Unlocker](https://github.com/synrais/Makita-LXT-Battery-Monitor-Unlocker)
+  project, which documented the frame byte map, the CS0/CS2 checksums, the
+  charger-lock nybble and the arm/write/store opcodes. That repository ships with
+  **no license** (all rights reserved), so **none of its code is used here**;
+  PocketOBI's unlock feature is a clean-room reimplementation from those
+  (unprotectable) protocol facts only, cross-checked against real battery dumps.
+
+## License
+
+PocketOBI is licensed under the **PolyForm Noncommercial License 1.0.0** — free to
+use, modify, and share for any **noncommercial** purpose (personal, hobby, repair,
+education, research). Commercial use requires a separate license. See [LICENSE](LICENSE).
+
+Bundled and reused third-party components keep their own licenses — see
+[THIRD-PARTY.md](THIRD-PARTY.md). The bundled OneWire2 library and the upstream
+Open Battery Information project remain under the MIT license.
+
+---
+
+<div align="center">
+
+```
+  ___         _       _    ___  ___ ___ 
+ | _ \___  __| |_____| |_ / _ \| _ )_ _|
+ |  _/ _ \/ _| / / -_)  _| (_) | _ \| | 
+ |_| \___/\__|_\_\___|\__|\___/|___/___|
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+       . No Guru Meditation required .
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+```
+
+Built by **[The Repair Forge](https://www.youtube.com/channel/UCQL_-pcIEkrDPyljl3QPzcw)**
+
+</div>

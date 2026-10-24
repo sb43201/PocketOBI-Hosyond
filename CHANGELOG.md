@@ -1,0 +1,496 @@
+# Changelog
+
+All notable changes to the PocketOBI firmware are documented here.
+Versioning follows [Semantic Versioning](https://semver.org/): MAJOR.MINOR.PATCH.
+
+The version is defined in `pocketobi.h` as `FW_VERSION` and shown
+on the boot splash and the About screen.
+
+## [2.5.0] - 2026-10-19
+
+A redesigned interface on every screen, Korean and Vietnamese in a new Asia build, safer touch confirms on the
+CYD, and honest results when a read goes wrong. (There is no 2.4.0 release: its work ships here.)
+
+### Added
+- **Korean.** A first-draft Korean translation of every screen (not reviewed by a native
+  speaker yet: corrections welcome, see `docs/TRANSLATING.md`).
+- **Vietnamese**, translated by a Vietnamese user (thank you!), without accents since the
+  device fonts have none.
+
+### Changed
+- **The Japanese build becomes the Asia build:** EN + Japanese + Korean + Vietnamese, selectable in Settings >
+  Language. French, German and Spanish stay in the standard build. The release files are now
+  `-esp32-c3-asia.bin` / `-cyd-asia.bin` (they were `-ja`). A language saved on the device that a
+  build does not offer falls back to English.
+- **New interface on every screen**, built from one shared set of components (status card,
+  KPI tiles, check rows, before/after cards, list rows). Every screen has a footer that says
+  what the controls do, headers are in sentence case, and results use a clear status word
+  (UNLOCKED, STILL LOCKED, CLEARED, UNCHANGED, NOT RE-READ, NO RESPONSE...) with a one-line
+  explanation under it.
+- **Battery pages:** the pack status and the PACK / TEMP tiles sit above the cell group; the
+  five cell voltages show 2 decimals in a lighter font, the spread keeps 3. Without a pack the
+  pages keep their layout and show `--` instead of the last pack's values.
+- **Repair:** the diagnosis lists what was checked, the confirm screen says what the write will
+  do and names its buttons (Cancel / Unlock), a progress card follows the four unlock steps, and
+  the result shows the state before and after plus the verdict on the re-read.
+- **Tools** now has two pages (device tools, then the pack actions marked WRITE); **Settings**,
+  **Comm error** (a list of three checks to try), **PC bridge**, **Debug**, **About** and the
+  **splash** follow the same design.
+- Changing a page in Tools or moving the selection no longer redraws the whole screen (no flash).
+
+### Fixed
+- **CYD: a tap anywhere on "Unlock pack?" or "Reset error?" ran the write.** Only the primary
+  button confirms now; Cancel cancels and a tap elsewhere does nothing. The CYD footers now say
+  what a tap does instead of naming encoder moves.
+- **A corrupted read is no longer shown as a battery fault**
+  ([#16](https://github.com/TheRepairforge/PocketOBI/issues/16)): a cell above 5 V or a pack
+  above 22 V is a bad read (usually wiring or pull-ups), reported as a comm error instead of a
+  HARDWARE FIX verdict that blamed the pack.
+- **Reset error result:** when the re-read after the reset failed, the screen said UNCHANGED (a
+  false "real fault" diagnosis). It now says NOT RE-READ, with no verdict.
+- An older (F0513) pack read after a standard pack showed the previous pack's assembly date.
+- With no pack connected, the read gives up sooner (the live read is skipped when the pack did
+  not answer the first one).
+
+### Known issue
+- **Flashing a merged `.bin` by hand at `0x0` resets the saved settings** (language, screen
+  flip, touch calibration on the CYD): the image covers the settings area. The web flasher keeps
+  them unless you tick "Erase device". Set them again after a manual flash.
+- Japanese: long text wraps on character boundaries and is never cut mid-character.
+
+### Docs
+- README, TROUBLESHOOTING and the CYD guide describe the new screens.
+- `HARDWARE.md`: the J3 pin map matched the schematic, not the fabricated board (pad 1 = ENABLE,
+  pad 5 = DATA); the hardware README now gives 470 ohm for R1/R2.
+- `TRANSLATING.md` covers Korean and Vietnamese; the translation issue form accepts them.
+
+### For contributors
+- Screen-demo builds `esp32-c3-demo` / `cyd-demo` show every screen with fictional packs, so
+  the interface can be reviewed on a panel without packs in each state. Not a shipping firmware:
+  they never read or write a pack.
+- 43 strings no screen uses any more were removed from the translation table; translators
+  only see what is on screen.
+- `tools/gen_cjk_glyphs.py` takes `--lang ja|ko` and an optional `--tree` (another firmware tree),
+  and `--check` also tells whether the glyph table is current, without the fonts.
+- `tools/hostsim/hostsim.py --asia` replaces `--ja`.
+
+## [2.3.1] - 2026-10-08
+
+### Fixed
+- **CYD fitted with an ILI9341 panel** (some dual-USB boards, issue
+  [#18](https://github.com/TheRepairforge/PocketOBI/issues/18)): the image was mirrored and
+  red/blue swapped, because the ST7789 orientation was written to it. New build option
+  `CYD_ILI9341` (in `board_local.h`, or the `cyd-ili9341` PlatformIO env) writes the ILI9341
+  orientation instead; the release carries a ready `cyd-ili9341` binary. The plain CYD build is
+  unchanged. After flashing, run Settings > Calibrate touch once. Thanks to stampeder for the
+  reports and the test.
+- Two harmless compiler warnings in `OneWire2.cpp` (`#undef` with trailing tokens).
+
+## [2.3.0] - 2026-10-08
+
+Japanese on every screen, a new logo, and the first release with ready-to-flash binaries.
+
+### Added
+- **Japanese build** (`ENABLE_CJK=1`; PlatformIO envs `esp32-c3-ja` and `cyd-ja`). Every
+  screen is translated except Debug, PC Bridge and About, which stay in English. The text
+  is a **first draft no native speaker has reviewed**: corrections are very welcome, see
+  `docs/TRANSLATING.md`. Glyphs come from Noto Sans JP Medium (16 px) and Fusion Pixel
+  12px ja (12 px), both under the SIL Open Font License (`THIRD-PARTY.md`).
+- **The CYD touch-calibration screen is translated** (FR/DE/ES/JA).
+- **Screen simulator, `tools/hostsim`**: compiles the real firmware for a PC and saves every
+  screen as an image, per language and board, so a translation can be checked without a board.
+- **Prebuilt binaries on every release**: one merged image per board (and per language
+  build), plus the separate parts and a `SHA256SUMS.txt`. See README, Build & flash.
+- **Translation issue form** and a translator guide (`docs/TRANSLATING.md`) covering German,
+  Spanish and Japanese.
+
+### Changed (internal, no behaviour change)
+- **Firmware source split into modules.** The single `PocketOBI.ino` (~2.6k lines)
+  is now a thin sketch (`setup`/`loop` + globals) plus a shared `pocketobi.h` and
+  `protocol` / `unlock` / `decode` / `display` / `ui_nav` / `bridge` `.h`/`.cpp`
+  modules. Both toolchains build the same root tree unchanged; the flashed firmware
+  is functionally identical (same RAM, same behaviour). Pure restructure for
+  readability and to give the next protocol family a clean seam.
+
+### Changed
+- **New PocketOBI logo** on the splash and About screens: a battery outline split by a
+  pulse line, in the Repair Forge orange (replaces the battery-and-bolt mark).
+
+## [2.2.0] - 2026-10-01
+
+Adds a second, alternative carrier board, the **CYD**, with a touch UI. The
+ESP32-C3 product is unchanged.
+
+### Added
+- **Second carrier board: the CYD (ESP32-2432S028R)** — a development /
+  alternative target alongside the shipping ESP32-C3. Same firmware logic,
+  different pins and input device, selected at build time. The per-board pin
+  map and the board selection live in `board_config.h`.
+- **Resistive-touch UI (XPT2046) on the CYD.** The 2×2 launcher, menus and the
+  paged Battery view are tap-navigable, with on-device touch calibration
+  (Settings > Calibrate) stored in NVS.
+
+### Changed
+- **Deterministic multi-board builds.** Each PlatformIO env pins its board with
+  `-D POCKETOBI_BOARD`, and the optional (gitignored) local override file is only
+  consulted when no board was set explicitly — a build always produces the board
+  its env names. The board-selection `#if/#elif` chain lives in `board_config.h`
+  (a real header) so the PlatformIO `.ino`→`.cpp` step cannot mangle it.
+
+### Fixed
+- Includes the 2.1.1 fix (false "suspect hardware" verdict on healthy BL1850B
+  packs), rolled forward from the 2.1 line.
+
+### Note
+- The CYD is an alternative board, **bench-validated end to end** (touch UI and
+  pack read over the CN1 connector). The ESP32-C3 remains the reference product.
+  Wiring and build notes: README (Alternative board: CYD) and `CYD_NOTES.md`.
+
+## [2.1.1] - 2026-09-18
+
+### Fixed
+- **False "suspect hardware" verdict on healthy BL1850B packs.** The on-device Debug
+  screen showed "Latched: YES" and the verdict read SUSPECT on packs that are balanced,
+  unlocked and working, because the low-level BMS marker it relied on turned out
+  to be a constant these packs always carry, not a stored fault. The marker no longer
+  affects the verdict; a genuinely locked pack is still detected by its charger lock. The
+  Debug screen now shows the raw marker bytes for reference. (Reported via issue #13.)
+
+## [2.1.0] - 2026-08-28
+
+First public release since 1.0.0 — the **V2 interface** on a **single-source build**.
+(The `2.0.0` line was developed but never published; its work ships here as part of `2.1.0`.)
+
+### Added
+- **New V2 interface.** A 2×2 launcher (Battery / Repair / Tools / About), encoder-driven,
+  that jumps straight to the Battery view when a pack is connected.
+- **Paged Battery view** (turn the encoder): Overview / Health / Identity.
+  - *Overview* — per-cell voltage bars (green / yellow / red), pack voltage, cell spread.
+  - *Health* — our own cycle-based Condition estimate, over-discharge / over-load wear
+    counters, cell min/max + spread, and both temperature sensors + spread.
+  - *Identity* — model, charge count, manufacturing date, capacity, and the pack
+    **serial number** (ROM ID in Makita 16-char hex format).
+- **Traffic-light verdict** — HEALTHY / REPAIRABLE / REAL FAULT, plus an orange
+  "possible HW fix" tier — shown on the Battery tile and screens.
+- **Repair wizard** — a staged, feasibility-first decision tree: comms check →
+  hardware faults (broken sense wire / weak group / imbalance / thermistor, each naming
+  the group or sensor) → lock + prognosis (false lockout "should hold" vs a memorised
+  fault "unlikely to hold"). A hardware fault blocks the unlock.
+- **Multilingual UI** — English, French, German, Spanish.
+- **Desk compatibility contract** (PC-bridge opcode `0x02`) reporting a protocol version,
+  battery-family id and cell count, so PocketOBI Desk routes to the right decoder and shows
+  a non-blocking warning on a version mismatch. The bridge transport stays a stable drop-in
+  ArduinoOBI regardless of version.
+
+### Changed
+- **Single-source build — the PlatformIO mirror is gone.** A root `platformio.ini`
+  (`src_dir = .`) now builds the same files the Arduino IDE compiles, straight from the
+  sketch folder; the old `platformio/` mirror project and its `sync.ps1` / `sync.sh` are
+  removed. `PocketOBI.ino` stays at the repo root, so the Arduino IDE build is unchanged —
+  one set of sources, both toolchains, nothing to keep in sync.
+- **Thermistor finding is now evidence-based**, an observation plus a suggested re-check
+  rather than a bare "replace the sensor"; a sensor-spread divergence is a soft "possible
+  HW fix" that does **not** block the unlock.
+- **One verdict everywhere.** The Repair wizard banner shows the exact same verdict —
+  word, colour and icon — as the Battery tile, computed from a single source.
+- **The undecoded raw "status" byte no longer drives any decision.** The error-reset
+  result now tracks the real BMS fault register (LOCKED → OK = "cleared", still LOCKED =
+  "unchanged", nothing set = "no error to clear"); the raw byte is shown only on the Debug
+  screen, marked undecoded.
+- **Repair prognosis reads as guidance, not a guarantee** — a memorised-fault marker is a
+  hint ("unlikely to hold"), never a hard verdict, and never blocks an unlock attempt.
+
+### Fixed
+- **PC bridge hardening** — serial buffers are bounded against oversized `len` / `rsp_len`,
+  and truncated frames are dropped instead of half-executed (the PC app simply resends).
+- **Removed the dead V1 menu/screen cluster** (~225 lines) left unreachable under V2
+  navigation.
+- **PC-bridge interface version derives from the firmware version** (was hardcoded/stale).
+
+### Notes
+- The public version jumps **`v1.0.0 → v2.1.0`**; `2.0.0` was internal-only.
+- Licence: PolyForm Noncommercial 1.0.0 (unchanged from 1.0.0). Upstream Open Battery
+  Information and the bundled OneWire2 remain MIT — see `THIRD-PARTY.md`.
+
+## [1.0.0] - 2026-08-05
+
+First official, stable release. The core decodes (protocol, temperature, cell
+voltages, capacity, charge count) are cross-validated on real packs. A larger V2
+(more readouts + UI overhaul) is planned separately.
+
+### Changed
+- **Faulty-thermistor reading now flagged explicitly.** When a temperature sensor
+  reads outside the plausible window it is shown with a leading `!` in red on the
+  home chip (e.g. `!-30/31`) = suspected **faulty sensor / hardware fault**, not a
+  real extreme temperature. (A dead thermistor pins near -30 C.)
+
+### Validated
+- **Temperature unit (1/10 K) validated on real packs.** Readings from several packs
+  (including one with a known faulty thermistor) confirm `T_C = raw/10 - 273.15`, and
+  that a dead thermistor reads a pinned absurd value (~ -30 C) — exactly the behaviour
+  PocketOBI already flags. No decode change needed; the comments now record it.
+
+## [0.9.7] - 2026-08-04
+
+### Added
+- **Details screen: state-of-health estimate + protection thresholds.** The
+  standard-battery Details view now shows `Health~` (a cycle-based SoH *estimate*,
+  the `~` marking it as an estimate rather than the BMS's own gauge) and
+  `Prot OL/OD` (over-current / over-discharge protection thresholds, in %). All
+  three are decoded from the ROM message frame already read — **no extra bus
+  traffic**. The decodes are corroborated by both sides of the
+  [m5din-makita](https://github.com/no-body-in-particular/m5din-makita) fork (its
+  reader and its BMS emulator store/read the same bytes the same way). Values are
+  best-effort: the absolute figures are not yet confirmed against a bench meter.
+- **Dual capacity-format decode.** Battery capacity (frame byte 16) is now decoded
+  for both encodings: newer packs store it directly in whole Ah, older packs store
+  a nibble-swapped value in tenths of an Ah. (From the MIT-licensed
+  [drakosha/makita-battery-tools](https://github.com/drakosha/makita-battery-tools).)
+
+### Documented
+- **Secondary frame checksums (CS3/CS4 in byte 31).** Added an in-code note on the
+  two secondary checksums (byte 31: covers bytes 22-23 and 24-30, the latter
+  including overload / over-discharge / cycle-count). No behaviour change - the
+  unlock only touches the CS2 range - but any future write to bytes 22-30 must
+  recompute byte 31. Corroborated by drakosha/makita-battery-tools, whose decode of
+  the three primary checksums matches ours exactly.
+
+### Changed
+- Temperature-unit note (README + code comment) upgraded from "disputed" to
+  "well-supported": the 1/10 K decode is now corroborated by four independent
+  sources (rosvall, obi-esp32, and both the reader and BMS emulator of the
+  m5din-makita fork). Open Battery Information's Celsius×100 is the outlier.
+
+## [0.9.6] - 2026-08-02
+
+### Added
+- **PlatformIO build** (`platformio/`): a conventional PlatformIO project
+  (src/ + lib/) for VS Code users, alongside the Arduino IDE build. It mirrors
+  the root Arduino sources via `platformio/sync.ps1` / `sync.sh`; the root
+  `PocketOBI.ino` remains the single source of truth. (Addresses issue #1.)
+
+## [0.9.5] - 2026-08-02
+
+### Changed
+- The home temperature chip now shows **both sensors** (cell / MOSFET, e.g.
+  `28/31`) instead of only the cell reading, so a disagreement between the two is
+  visible at a glance. It turns red when either reading is outside the plausible
+  window (likely faulty thermistor). F0513 (single sensor) is unchanged.
+- README/HARDWARE wording tidied for the public release; the unlock/repair is
+  described by its scope (clears a false charger lockout on an otherwise-healthy
+  pack; never overrides the BMS's own fault protection).
+
+## [0.9.4] - 2026-07-30
+
+### Fixed / hardened (pre-release audit against all protocol sources)
+- **PC bridge** now reports the real firmware version in the interface-version
+  query (was hardcoded to 0.8.x).
+- **F0513**: clear `romId`/`msg` on the F0513 path so Debug/raw no longer shows
+  stale data left over from a previously-read standard pack.
+- **10-cell / 36V packs (BL36xx)**: detected (battery type >= 30) and shown as
+  "not supported (18V only)" instead of a misleading 5-cell dashboard.
+- **Robustness**: guard against a `uint8_t` underflow if a `0x33` command were
+  ever defined with `rsp_len < 8`.
+- Added a note that the **F0513 temperature unit is unverified** (kept at /100;
+  the standard path uses 1/10 K).
+
+## [0.9.3] - 2026-07-30
+
+### Added
+- Implausible-temperature flag: when the cell temperature falls outside a
+  plausible window (`TEMP_MIN_PLAUS`..`TEMP_MAX_PLAUS`, -20..80 C), the home
+  temperature chip turns red and shows a trailing `?` (e.g. `T -30?`) — a
+  likely faulty thermistor. It is a suspicion, not a confirmed diagnosis.
+
+## [0.9.2] - 2026-07-30
+
+### Fixed
+- **Temperature decoding**: the protocol reports temperature in **1/10 K**
+  (`raw = (T_C + 273.15) * 10`), not Celsius x100. Cell and MOSFET temperatures
+  are now decoded as `raw / 10 - 273.15`. Previous values were a few degrees off
+  on a healthy pack, and — more importantly — a **faulty thermistor** (which
+  reports an absurd value the charger rejects as a "temperature" fault) now shows
+  its true reading (e.g. ~ -30 C) instead of a misleading normal-looking number.
+
+## [0.9.1] - 2026-07-29
+
+### Added
+- Serial trace of the raw frame write/store (`ow33`) under `COMM_DEBUG`, so the
+  otherwise-invisible unlock writes show up in the logs.
+
+### Fixed
+- Home + Details **LOCKED/UNLOCKED** now reflects the real **charger lock**
+  (nybble 34 / CS0 / CS2 mismatch, i.e. what actually makes the charger refuse a
+  pack), not only the failure code (nybble 40). Details also shows a `ChgLock:`
+  line listing the causes (`N34`/`CS0`/`CS1`/`CS2`). Previously a frame whose
+  charger-lock nybble was set could still read UNLOCKED on screen.
+
+## [0.9.0] - 2026-07-26
+
+### Added
+- **Unlock / repair** menu entry: rewrites a battery frame to make the charger
+  accept a pack whose cells are healthy but whose stored frame trips the charger
+  lock. Clears the charger-lock nybble (nybble 34) and recomputes all three
+  frame checksums (CS0, CS1, CS2 - CS0/CS2 gate the charger, CS1 the battery's
+  internal lock), then writes the frame back
+  (arm `CC F0 00` -> write `33 0F 00` + 32 bytes -> store `33 55 A5`), power-
+  cycles the bus and clears the internal error register. Guarded by a
+  confirmation screen; if the frame is already valid, no write is performed.
+  Shows the lock causes before -> after. Manufacturing/status bytes (incl.
+  byte 19 / `0xA5`) and the failure code (nybble 40) are never modified.
+- Result screen reporting the remaining lock causes (`CS0`/`CS1`/`CS2`/`N34`) and
+  an Unlocked / Still-locked verdict.
+
+### Changed
+- **Error reset** now runs the full sequence: enter test mode -> `DA 04` ->
+  exit test mode (`CC D9 FF FF`) -> bus power-cycle, so the BMS actually commits
+  the internal error-register clear (previously it stopped after `DA 04`).
+
+### Notes / credit
+- The unlock/frame-repair capability is a **clean-room** reimplementation from
+  publicly documented protocol facts (frame byte/nybble map, checksum ranges +
+  formula, nybble-34 charger lock, arm/write/store opcodes). Sources:
+  - **rosvall/makita-lxt-protocol** (Codeberg) — root reverse-engineering of the
+    frame layout and the three checksum ranges (0-15, 16-31, 32-40).
+  - **synrais/Makita-LXT-Battery-Monitor-Unlocker** — frame-repair method and the
+    empirical charger-validation results (only nybble 34, CS0, CS2 gate the
+    charger). This repo ships with **no license** (all rights reserved), so none
+    of its source code is used — only the unprotectable protocol facts, cross-
+    checked against real battery dumps.
+  - Base protocol credit remains Open Battery Information (Martin Jansson, MIT).
+
+## [0.8.1] - 2026-07-21
+
+### Changed
+- Clearer lock status: home footer shows **UNLOCKED** (green) / **LOCKED** (red)
+  instead of "OK". Added an explicit colored "State: UNLOCKED/LOCKED" line to the
+  Details screen.
+
+## [0.8.0] - 2026-07-21
+
+### Added
+- **PC bridge mode** (menu entry "PC bridge"): the device acts as a USB <->
+  OneWire bridge, a drop-in replacement for the ArduinoOBI, so the desktop
+  **Open Battery Information** app talks to PocketOBI directly (select the
+  Arduino OBI interface + PocketOBI's COM port). Handles the version query and
+  the 0xCC / 0x33 / F0513 (0x31,0x32) commands via the existing sendCommand().
+  Back button exits. Dual use: standalone tester AND PC adapter.
+
+### Changed
+- COMM_DEBUG serial tracing defaults to OFF (comms validated). It MUST stay off
+  in PC bridge mode or it would corrupt the binary protocol.
+
+## [0.7.0] - 2026-07-21
+
+### Added
+- Estimated state of charge (SoC ~%) on the home screen, derived from the
+  average cell voltage (piecewise-linear Li-ion OCV curve; approximate, shown
+  with a "~").
+
+### Changed
+- Boot now goes: splash (~1.5 s) -> menu directly. No auto-read and no
+  "no battery" home screen; the user picks what to do from the menu.
+
+## [0.6.2] - 2026-07-21
+
+### Changed
+- Removed the auto-read at boot. The boot splash now shows for ~1.5 s as a
+  simple logo screen, then the home screen appears; the user starts a read from
+  the menu. (First real-hardware validation: reads a BL1860B correctly.)
+
+## [0.6.1] - 2026-07-21
+
+### Changed
+- Ground is now taken from the main B- terminal (simpler and more reliable than
+  signal pin 5; same ground). Wiring docs updated accordingly.
+- "beta" tag shown on the splash and About screens; README gains a "Step 1
+  (beta)" status section and a link to The Repair Forge YouTube channel.
+
+## [0.6.0] - 2026-07-21
+
+### Changed
+- Tool named **PocketOBI** (standalone OBI client). Boot splash now shows the
+  name in big two-tone letters ("Pocket" teal + "OBI" orange) instead of the
+  logo. About screen features PocketOBI, credits "The Repair Forge" as creator,
+  and keeps the base-project credit (Open Battery Information, Martin Jansson).
+
+### Removed
+- Primitive-drawn logo mark (anvil/wrench/spark) dropped in favor of the name.
+
+## [0.5.0] - 2026-07-21
+
+### Added
+- Credit to the base project on the About screen: Open Battery Information by
+  Martin Jansson (MIT), github.com/mnh-jansson.
+
+## [0.4.0] - 2026-07-21
+
+### Added
+- Boot splash screen (title + version + "Reading battery...").
+- Auto-read on startup: the tool attempts a battery read at boot, so the home
+  screen shows real data immediately when a pack is present instead of always
+  claiming "no battery" before ever checking.
+
+### Changed
+- Home "no battery" screen now only appears after an actual read attempt, with
+  a clearer prompt ("Connect a pack, then Menu > Read battery").
+
+## [0.3.2] - 2026-07-21
+
+### Fixed
+- Battery communication never started: the code aborted every transaction on
+  `makita.reset()` returning 0. The Makita BMS does not assert a standard
+  OneWire presence pulse, so the official ArduinoOBI ignores that return value.
+  We now reset and talk regardless, and detect "no battery" from an all-0xFF
+  response instead.
+
+### Added
+- COMM_DEBUG serial trace of every OneWire transaction (presence flag, ROM ID,
+  received bytes) to diagnose battery communication on real hardware.
+
+## [0.3.1] - 2026-07-21
+
+### Fixed
+- Encoder rotation direction was reversed; swapped A/B in the RotaryEncoder
+  constructor so turning right moves down the menu.
+
+## [0.3.0] - 2026-07-21
+
+### Added
+- Secondary "back" button support on the module's KO button (wire KO to GPIO2):
+  short press = go one screen back (sub-screen -> menu, menu -> home),
+  long press (>= 600 ms) = jump straight to home. Uses the internal pull-up,
+  so it stays inert until KO is actually wired.
+
+## [0.2.0] - 2026-07-20
+
+### Changed
+- Menu bullets replaced with real icons drawn from primitives (battery, list,
+  refresh, sun, sun-off, code, info). On the highlighted row the icon is forced
+  to the light header color so it stays visible on the accent background.
+
+## [0.1.0] - 2026-07-20
+
+First versioned release. The firmware is feature-complete on the UI side but
+the battery OneWire2 communication has not yet been validated against real
+hardware (waiting for the battery connector).
+
+### Added
+- Standalone Makita LXT reader on ESP32-C3 + ST7789 2.4" TFT + EC11 encoder.
+- OneWire2 protocol layer (bundled), commands ported from `makita_lxt.py`.
+- Automatic standard / F0513 battery detection.
+- Home screen with per-cell voltage bars, color-coded anomalies
+  (green / yellow / red) and status chips (temperature, spread, lock/error).
+- Menu: read info, details, reset error, pack LEDs on/off, debug/raw,
+  version/info.
+- Error reset with before -> after visual feedback.
+- Dark dashboard theme: accent header bars, rounded bars, colored menu bullets.
+- "Version / info" screen showing firmware version and build date.
+
+### Hardware / libraries
+- Display driven with Adafruit GFX + Adafruit ST7789 over hardware SPI.
+- Encoder decoded with the RotaryEncoder library (software, ESP32-C3 compatible).
+
+### Known / untested
+- OneWire2 battery communication never tested on real hardware.
+- Display orientation is landscape (`setRotation(1)`); portrait not done yet.
