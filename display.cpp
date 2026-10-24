@@ -12,6 +12,7 @@
 #include "ui_components.h"
 #include "bridge.h"
 #include "wifi_service.h"
+#include "device_power.h"
 #include "icons_bitmaps.h"
 
 // PocketOBI logo, 48x48, 1-bit: battery outline split by a pulse line (house mark, D27).
@@ -126,7 +127,26 @@ static void header(const char *title) {
     case COMM_ERROR:     g = iconWarning;  break;
     default:             break;
   }
+#ifdef DEVICE_BATTERY_ADC_PIN
+  // Leave room for page dots / the Wi-Fi tab and the unit battery badge.
+  const int titleX = g ? 2 * SP_4 - 2 : SP_2;
+  const int right = (state == SETTINGS && POCKETOBI_WIFI) ? SETTINGS_WIFI_TAB_X - 8 : 178;
+  char shortTitle[96];
+  snprintf(shortTitle, sizeof(shortTitle), "%s", title);
+  if (gfxWidth(FONT_LEVEL3, shortTitle) > right - titleX) {
+    const int ellipsisWidth = gfxWidth(FONT_LEVEL3, "...");
+    while (shortTitle[0] && gfxWidth(FONT_LEVEL3, shortTitle) + ellipsisWidth > right - titleX) {
+      size_t n = strlen(shortTitle) - 1;
+      while (n > 0 && ((uint8_t)shortTitle[n] & 0xC0) == 0x80) --n;
+      shortTitle[n] = 0;
+    }
+    strlcat(shortTitle, "...", sizeof(shortTitle));
+  }
+  drawHeader(shortTitle, g);
+  drawDevicePower();
+#else
   drawHeader(title, g);
+#endif
 }
 // Repair wizard header (the shell, D35 lockstep): the title names the step, the page dots carry
 // its position (the step number is not repeated in the title).
@@ -828,10 +848,10 @@ void drawSettings() {
   header(tr(S_SETTINGS));
 #if POCKETOBI_WIFI
   // A separate tab avoids squeezing a fifth row into the existing touch layout.
-  tft.fillRoundRect(244, 4, 68, 24, RADIUS_SM, COL_PANEL);
-  tft.drawRoundRect(244, 4, 68, 24, RADIUS_SM, COL_TEXT);
+  tft.fillRoundRect(SETTINGS_WIFI_TAB_X, 4, SETTINGS_WIFI_TAB_W, 24, RADIUS_SM, COL_PANEL);
+  tft.drawRoundRect(SETTINGS_WIFI_TAB_X, 4, SETTINGS_WIFI_TAB_W, 24, RADIUS_SM, COL_TEXT);
   tft.setFont(NULL); tft.setTextSize(1); tft.setTextColor(COL_TEXT, COL_PANEL);
-  tft.setCursor(262, 12); tft.print("Wi-Fi");
+  tft.setCursor(SETTINGS_WIFI_TAB_X + 15, 12); tft.print("Wi-Fi");
 #endif
   for (int i = 0; i < settingsCount; i++) drawSettingsRow(i);
 #if BOARD_HAS_TOUCH

@@ -9,6 +9,7 @@
 #include <WebServer.h>
 #include <ArduinoJson.h>
 #include "web_interface.h"
+#include "device_power.h"
 
 namespace {
 WiFiManager manager;
@@ -143,6 +144,8 @@ void status() {
   doc["ip"] = wifiAddress();
   doc["rssi"] = wifiSignal();
   doc["setupAp"] = setupName;
+  if (deviceBatteryVoltageValid()) doc["deviceBatteryVoltage"] = deviceBatteryVoltage();
+  else doc["deviceBatteryVoltage"] = nullptr;
   doc["bridge"] = state == PC_BRIDGE;
   jsonReply(doc);
 }

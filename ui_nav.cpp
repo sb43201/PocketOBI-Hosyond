@@ -9,6 +9,7 @@
 #include "ui_nav.h"
 #include "bridge.h"
 #include "wifi_service.h"
+#include "device_power.h"
 
 // ---------- Buttons / navigation logic (V2) ----------
 // Activate target `idx` on screen `s`. Shared core of every selection: the
@@ -256,7 +257,7 @@ void serviceTouch() {
     touchFeedback(sx, sy);                                             // acknowledge the tap
     lastRenderedState = -1;                                            // force a full redraw so the feedback ring is erased
 #if POCKETOBI_WIFI
-    if (state == SETTINGS && sy >= 4 && sy < 28 && sx >= 244 && sx < 312) {
+    if (state == SETTINGS && sy >= 4 && sy < 28 && sx >= SETTINGS_WIFI_TAB_X && sx < SETTINGS_WIFI_TAB_X + SETTINGS_WIFI_TAB_W) {
       state = WIFI_INFO; render(); return;
     }
 #endif

@@ -5,6 +5,7 @@
 // edit one, copy it to the other (tools/check_structure.py fails otherwise). The COL_* values come
 // from the tree's generated ui_palette.h, every size from the generated ui_theme.h.
 #include "ui_components.h"
+#include "device_power.h"
 
 // smooth-font helpers (labels/chrome). Classic font stays for data/values.
 // In the JA build the print draws Japanese itself (PocketTFT); only the width differs, because
@@ -189,6 +190,9 @@ void drawHeader(const char *title, IconFn glyph) {
 // Page dots at the top-right of the header; the active one punches through to COL_BG, the others get
 // the dim tint (a same-colour dot would vanish on the bar).
 void drawPageDots(int active, int count, int rightInset) {
+#ifdef DEVICE_BATTERY_ADC_PIN
+  rightInset += SCREEN_W - DEVICE_BATTERY_BADGE_X;
+#endif
   const int dw = SP_2, gap = 5, tot = count * dw + (count - 1) * gap;
   const int x0 = SCREEN_W - rightInset - tot, y = (HEADER_H - dw) / 2;
   for (int i = 0; i < count; i++)

@@ -1,7 +1,8 @@
 > **Wi-Fi development branch:** build **hosyond-cyd28-wifi** (this branch's default).
 > Includes WiFiManager provisioning, configurable setup AP name/key, browser battery
 > controls and a Settings Wi-Fi information tab. See [Wi-Fi setup guide](docs/WIFI.md).
-> Hardware testing of the new Wi-Fi functions is pending. The original offline
+> The owner confirmed the Wi-Fi functions work. The new unit-voltage display still
+> needs a multimeter check. The original offline
 > release remains tagged [hosyond-v1.0.0](https://github.com/sb43201/PocketOBI-Hosyond/releases/tag/hosyond-v1.0.0).
 
 # PocketOBI for Hosyond 2.8-inch ESP32
@@ -62,6 +63,10 @@ USB-C <--- USB power               battery B+ : NOT CONNECTED
 Remove the microSD card and disconnect external SPI accessories. IO23 is shared
 with the SD slot; firmware holds SD CS (IO5) high. Obtain 3V3 and GND from the
 board's power/expansion connections. No external display wiring is needed.
+
+The top bar also displays **Unit x.xxV**, the device's own single-cell battery
+voltage measured through the board's built-in GPIO34 divider. It is separate
+from the Makita pack voltage. See [device battery power](docs/DEVICE_POWER.md).
 
 ## Build and upload
 

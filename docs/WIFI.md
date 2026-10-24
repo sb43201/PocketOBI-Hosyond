@@ -109,7 +109,8 @@ Firmware builds and browser/API contract tests are the automated checks. Run:
 node --test tests/web_ui.test.cjs
 ```
 
-Hardware validation is still required for this feature branch:
+The owner subsequently confirmed the Wi-Fi functions work on the target board.
+The following checklist documents the hardware scenarios:
 
 1. First boot without saved router credentials; join the displayed AP and provision.
 2. Confirm the home-network IP appears and the browser can read a known pack.
@@ -125,7 +126,7 @@ Hardware validation is still required for this feature branch:
 Repair/reset and LED hardware behavior remain subject to the original release's
 validation limits. This branch does not enable ArduinoOTA or alter BMS thresholds.
 
-## Recorded automated checks (October 23, 2026)
+## Recorded automated checks before unit-voltage addition (October 23, 2026)
 
 - `hosyond-cyd28-wifi`: build passed; RAM 47,440 bytes (14.5%), flash 980,053
   bytes (74.8% of the 1,310,720-byte application partition).
@@ -138,3 +139,8 @@ validation limits. This branch does not enable ArduinoOTA or alter BMS threshold
 
 No firmware was uploaded and no live Wi-Fi provisioning or radio-active battery
 reads were performed by these automated checks.
+
+The header now also shows the device's own Li-ion voltage. The Settings Wi-Fi
+tab is immediately left of that badge. See [device power](DEVICE_POWER.md) for
+the board connector, divider and measurement limits. This voltage feature still
+needs comparison with a multimeter.

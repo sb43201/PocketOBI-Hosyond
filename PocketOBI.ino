@@ -83,6 +83,7 @@
 #include "ui_nav.h"
 #include "bridge.h"
 #include "wifi_service.h"
+#include "device_power.h"
 #include "strings_ja.h"   // STRTAB_JA, only when ENABLE_CJK=1
 #include "strings_ko.h"   // STRTAB_KO, only when ENABLE_CJK=1
 #include "strings_vi.h"   // STRTAB_VI, only when ENABLE_VI=1
@@ -310,6 +311,7 @@ int lastBatteryPage = -1;  // force a screen clear when the Battery page changes
 
 void setup() {
   Serial.begin(115200);
+  devicePowerSetup();
 #ifdef UNUSED_SD_CS
   pinMode(UNUSED_SD_CS, OUTPUT);
   digitalWrite(UNUSED_SD_CS, HIGH);
@@ -473,6 +475,10 @@ void loop() {
 
 #if POCKETOBI_WIFI && !UI_DEMO
   wifiService();
+#endif
+#if !UI_DEMO
+  // Sampling runs between transactions, not inside OneWire timing slots.
+  if (devicePowerTick() && !(state == ABOUT && aboutEgg > ABOUT_EGG_N)) drawDevicePower();
 #endif
   delay(1);
 }

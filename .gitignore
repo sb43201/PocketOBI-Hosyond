@@ -38,3 +38,6 @@ diagnostic-build/
 # Downloaded comparison page, not part of the firmware
 makita-comparison-page.html
 release-artifacts/
+
+# PlatformIO temporary converted sketch
+*.ino.cpp

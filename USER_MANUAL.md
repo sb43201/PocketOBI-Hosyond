@@ -1,3 +1,7 @@
+> **Device battery indicator:** current branch builds show the handheld's own
+> Li-ion voltage as **Unit x.xxV** in the header. See
+> [battery connector and voltage accuracy](docs/DEVICE_POWER.md).
+
 > **Wi-Fi branch addendum:** this branch also provides `hosyond-cyd28-wifi`.
 > Read [Wi-Fi setup and browser controls](docs/WIFI.md) for network provisioning
 > and the Settings Wi-Fi tab. The manual below describes the offline 1.0.0 baseline.

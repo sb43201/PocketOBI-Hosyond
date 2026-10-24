@@ -68,6 +68,13 @@
 #define ONEWIRE_PIN 23   // exposed SPI peripheral MOSI / IO23 -> battery DATA
 #define ENABLE_PIN  27   // exposed SPI peripheral CS / IO27 -> battery ENABLE
 #define UNUSED_SD_CS 5  // hold SD deselected; this port does not use SD
+// E32R28T schematic: BAT+ -> R2 100k -> GPIO34 -> R3 100k -> GND.
+// GPIO34 is ADC1, so it remains usable while Wi-Fi is active.
+#define DEVICE_BATTERY_ADC_PIN 34
+#define DEVICE_BATTERY_DIVIDER 2.0f
+#ifndef DEVICE_BATTERY_CALIBRATION
+#define DEVICE_BATTERY_CALIBRATION 1.0f
+#endif
 #else
 // Original upstream CYD variant: CN1 IO22 / IO27.
 #define ONEWIRE_PIN 22
