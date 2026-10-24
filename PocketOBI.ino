@@ -82,6 +82,7 @@
 #include "display.h"
 #include "ui_nav.h"
 #include "bridge.h"
+#include "wifi_service.h"
 #include "strings_ja.h"   // STRTAB_JA, only when ENABLE_CJK=1
 #include "strings_ko.h"   // STRTAB_KO, only when ENABLE_CJK=1
 #include "strings_vi.h"   // STRTAB_VI, only when ENABLE_VI=1
@@ -401,6 +402,11 @@ void setup() {
   state = cfgBridgeBoot ? PC_BRIDGE : LAUNCHER;
   render();
 #endif
+#if POCKETOBI_WIFI && !UI_DEMO
+  wifiSetup();
+  lastRenderedState = -1;
+  render();
+#endif
 }
 
 void loop() {
@@ -465,6 +471,9 @@ void loop() {
   navTouch();      // read the XPT2046, hit-test the screen, drive the nav core
 #endif
 
+#if POCKETOBI_WIFI && !UI_DEMO
+  wifiService();
+#endif
   delay(1);
 }
 

@@ -11,6 +11,7 @@
 #include "ui_nav.h"
 #include "ui_components.h"
 #include "bridge.h"
+#include "wifi_service.h"
 #include "icons_bitmaps.h"
 
 // PocketOBI logo, 48x48, 1-bit: battery outline split by a pulse line (house mark, D27).
@@ -825,6 +826,13 @@ static void drawSettingsRow(int i) {
 }
 void drawSettings() {
   header(tr(S_SETTINGS));
+#if POCKETOBI_WIFI
+  // A separate tab avoids squeezing a fifth row into the existing touch layout.
+  tft.fillRoundRect(244, 4, 68, 24, RADIUS_SM, COL_PANEL);
+  tft.drawRoundRect(244, 4, 68, 24, RADIUS_SM, COL_TEXT);
+  tft.setFont(NULL); tft.setTextSize(1); tft.setTextColor(COL_TEXT, COL_PANEL);
+  tft.setCursor(262, 12); tft.print("Wi-Fi");
+#endif
   for (int i = 0; i < settingsCount; i++) drawSettingsRow(i);
 #if BOARD_HAS_TOUCH
   footer(S_H_CLICK_TOGGLE, S_COUNT, S_H_BACK_TOOLS);   // back hint uses the right-aligned slot
@@ -885,6 +893,31 @@ int touchHit(UiState s, int sx, int sy) {
   }
 }
 
+#if POCKETOBI_WIFI
+static void drawWifiInfo() {
+  header("Wi-Fi information");
+  const String rows[] = {
+    String("Status: ") + wifiStatusLabel(),
+    String("Network: ") + wifiNetwork(),
+    String("IP: ") + wifiAddress(),
+    wifiConnected() ? String("Signal: ") + wifiSignal() + " dBm" : String("Signal: --"),
+    String("Setup AP: ") + wifiSetupName(),
+    String("AP key: ") + wifiSetupPassword(),
+    wifiPortalActive() ? String("Join AP, open http://192.168.4.1") : String("Browser: http://") + wifiAddress()
+  };
+  tft.setFont(NULL); tft.setTextSize(1); tft.setTextColor(COL_TEXT, COL_BG);
+  for (int i = 0; i < 7; ++i) {
+    tft.setCursor(GUTTER, CONTENT_Y + 4 + i * 18);
+    // Values fit the panel without wrapping into another control.
+    tft.print(rows[i].substring(0, 49));
+  }
+  drawCard(GUTTER, 174, CONTENT_W, 34, false, RADIUS_MD);
+  gfxCenter(FONT_LEVEL3, SCREEN_W / 2, 197,
+            wifiPortalActive() ? "Close Wi-Fi setup" : "Open Wi-Fi setup", COL_ACCENT);
+  drawFooterHint("Tap setup to change Wi-Fi", tr(S_T_TITLE_BACK));
+}
+#endif
+
 void render() {
   // Clear on a screen change, and on a Battery page change (different layouts).
   // Launcher/Tools/Settings selection repaint their items in place (self-erasing), no clear.
@@ -903,6 +936,9 @@ void render() {
     case RESET_RESULT:   drawResetResult();  break;
     case TOOLS:          drawTools();        break;
     case SETTINGS:       drawSettings();     break;
+#if POCKETOBI_WIFI
+    case WIFI_INFO:      drawWifiInfo();     break;
+#endif
     case DEBUG_RAW:      drawDebugRaw();     break;
     case PC_BRIDGE:      drawPcBridge();     break;
     case ABOUT:          drawAbout();        break;

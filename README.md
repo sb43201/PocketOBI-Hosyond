@@ -1,3 +1,9 @@
+> **Wi-Fi development branch:** build **hosyond-cyd28-wifi** (this branch's default).
+> Includes WiFiManager provisioning, configurable setup AP name/key, browser battery
+> controls and a Settings Wi-Fi information tab. See [Wi-Fi setup guide](docs/WIFI.md).
+> Hardware testing of the new Wi-Fi functions is pending. The original offline
+> release remains tagged [hosyond-v1.0.0](https://github.com/sb43201/PocketOBI-Hosyond/releases/tag/hosyond-v1.0.0).
+
 # PocketOBI for Hosyond 2.8-inch ESP32
 
 **Hosyond release 1.0.0 — October 23, 2026**

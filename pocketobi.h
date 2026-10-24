@@ -52,7 +52,7 @@
 // ---------- UI state ----------
 // V2 navigation: 2x2 launcher -> sections (Battery paged / Repair wizard / Tools / About).
 enum UiState { LAUNCHER, BATTERY, REPAIR_DIAG, CONFIRM_UNLOCK, UNLOCK_RESULT,
-               CONFIRM_RESET, RESET_RESULT, TOOLS, SETTINGS, DEBUG_RAW, PC_BRIDGE, ABOUT, COMM_ERROR };
+               CONFIRM_RESET, RESET_RESULT, TOOLS, SETTINGS, DEBUG_RAW, PC_BRIDGE, ABOUT, COMM_ERROR, WIFI_INFO };
 // Traffic-light verdict. Defined BEFORE the first function definition (tr, below)
 // so the Arduino IDE's auto-generated prototypes (which reference Verdict) see the type.
 enum Verdict { V_UNKNOWN, V_HEALTHY, V_REPAIRABLE, V_SUSPECT, V_FAULT };

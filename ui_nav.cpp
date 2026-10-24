@@ -8,6 +8,7 @@
 #include "display.h"
 #include "ui_nav.h"
 #include "bridge.h"
+#include "wifi_service.h"
 
 // ---------- Buttons / navigation logic (V2) ----------
 // Activate target `idx` on screen `s`. Shared core of every selection: the
@@ -94,6 +95,11 @@ void activate(UiState s, int idx) {
     case COMM_ERROR:
       state = LAUNCHER;
       break;
+#if POCKETOBI_WIFI
+    case WIFI_INFO:
+      wifiRequestPortal();
+      break;
+#endif
     case PC_BRIDGE:
       state = TOOLS;
       break;
@@ -136,6 +142,9 @@ void handleBack() {
     case DEBUG_RAW:
     case PC_BRIDGE:
     case SETTINGS:       state = TOOLS; break;
+#if POCKETOBI_WIFI
+    case WIFI_INFO:      state = SETTINGS; break;
+#endif
     default:             state = LAUNCHER; break;       // Battery / Repair / Tools / About / error
   }
   render();
@@ -246,11 +255,23 @@ void serviceTouch() {
 #endif
     touchFeedback(sx, sy);                                             // acknowledge the tap
     lastRenderedState = -1;                                            // force a full redraw so the feedback ring is erased
+#if POCKETOBI_WIFI
+    if (state == SETTINGS && sy >= 4 && sy < 28 && sx >= 244 && sx < 312) {
+      state = WIFI_INFO; render(); return;
+    }
+#endif
     if (sy < HEADER_H && state != LAUNCHER) { handleBack(); return; }  // tap header = back
     if (state == BATTERY) {                        // page nav: side edges = prev/next, centre = refresh
       if (sx < 64)       { handleRotate(-1); return; }
       else if (sx > 255) { handleRotate(+1); return; }
     }
+#if POCKETOBI_WIFI
+    if (state == WIFI_INFO) {
+      if (sx >= GUTTER && sx < SCREEN_W - GUTTER && sy >= 174 && sy < 208)
+        wifiRequestPortal();
+      render(); return;
+    }
+#endif
     if (state == PC_BRIDGE) { handleRotate(1); return; }   // tap body = toggle bridge active
     if (state == ABOUT) {                                  // easter egg
       if (aboutEgg > ABOUT_EGG_N) { activate(ABOUT, 0); render(); }  // in the guru crash: tap dismisses to About

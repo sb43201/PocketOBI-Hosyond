@@ -1,3 +1,7 @@
+> **Wi-Fi branch addendum:** this branch also provides `hosyond-cyd28-wifi`.
+> Read [Wi-Fi setup and browser controls](docs/WIFI.md) for network provisioning
+> and the Settings Wi-Fi tab. The manual below describes the offline 1.0.0 baseline.
+
 # PocketOBI Hosyond — User manual
 
 Hosyond release 1.0.0 · October 23, 2026

@@ -180,3 +180,15 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
+
+## Wi-Fi feature branch additions
+
+`web_interface.h` is adapted from the owner's earlier local OBI ESP32 project,
+appositeit/obi-esp32. Its MIT notice (Copyright 2025 Jem, based on Open Battery
+Information by Martin Jansson) is preserved in
+[docs/licenses/obi-esp32-MIT.txt](docs/licenses/obi-esp32-MIT.txt).
+
+WiFiManager by tzapu (2.0.17, MIT) and ArduinoJson by Benoit Blanchon (7.4.2, MIT)
+are fetched as PlatformIO dependencies, not vendored source. Their original
+license files remain with the installed libraries. ESP32 Wi-Fi/WebServer come
+from the existing Arduino-ESP32 platform.
