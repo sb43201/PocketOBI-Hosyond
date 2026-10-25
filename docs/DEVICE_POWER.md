@@ -1,6 +1,7 @@
 # Device Li-ion voltage display
 
-Added on `codex/wifi-manager`, after the owner confirmed the Wi-Fi functions work.
+Included in Hosyond Wi-Fi release 1.1.0. The owner confirmed the Wi-Fi functions
+and device-voltage display work.
 Build/upload **hosyond-cyd28-wifi** as before. The offline hosyond-cyd28 build on
 this branch also includes the unit-voltage indicator; the 1.0.0 tag is unchanged.
 
@@ -50,7 +51,7 @@ ENABLE are unchanged.
 After uploading, compare the displayed value with a multimeter across the
 connected cell/board BAT connector, preferably with USB disconnected. ADC and
 resistor tolerances mean this is an approximate monitor, not a precision meter.
-Hardware comparison has not yet been performed for this new indicator.
+Absolute voltage accuracy has not yet been independently compared with a meter.
 
 If a repeatable correction is needed, add a build flag such as
 `-D DEVICE_BATTERY_CALIBRATION=1.02f` to the Wi-Fi environment's build_flags.
@@ -65,6 +66,6 @@ reading); it does not expose a fabricated battery percentage or charge state.
 
 Both `hosyond-cyd28-wifi` and `hosyond-cyd28` compiled after this change. Wi-Fi
 build: 47,640 bytes RAM / 989,253 bytes flash. Offline build: 22,736 bytes RAM /
-364,141 bytes flash. The five browser regression tests passed. Physical voltage
-accuracy, charging behavior and the updated header layout still need checking on
-the board; this software check does not replace that measurement.
+364,141 bytes flash. The five browser regression tests passed. The owner subsequently confirmed the display works. Absolute voltage accuracy
+and charging behavior have not been independently verified; these software
+checks do not replace that measurement.

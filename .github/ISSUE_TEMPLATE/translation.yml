@@ -6,12 +6,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping. The review pages on https://therepairforge.github.io/translate/ show every
-        screen and open this form already filled in. Two limits on the device screen:
-        **plain ASCII only** for German and Spanish (no accents; umlauts as ae, oe, ue, ss) and
-        **limited width** (keep close to the longest version shown today). Japanese and Korean keys
-        and text are in `strings_ja.h` and `strings_ko.h`, with the English next to each line. Every accepted fix is rendered
-        on the real screen before it ships.
+        Suggest translation changes for this Hosyond port here. Original language tables
+        are inherited from TheRepairforge/PocketOBI. Include the language, string key,
+        proposed wording and a screenshot if available. Text must fit the small display.
   - type: input
     id: language
     attributes:

@@ -1,4 +1,6 @@
-> **Hosyond 2.8-inch port:** see [HOSYOND.md](HOSYOND.md) for build, upload, wiring and touch calibration. Default PlatformIO environment: `hosyond-cyd28`.
+> Historical upstream README snapshot for provenance. For this port use the
+> [current README](../README.md) and [manual](../USER_MANUAL.md). Original project:
+> [TheRepairforge/PocketOBI](https://github.com/TheRepairforge/PocketOBI).
 
 <div align="center">
 

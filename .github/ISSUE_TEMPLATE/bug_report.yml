@@ -1,86 +1,61 @@
-name: Bug report / build help
-description: Something doesn't work — a build that won't read a pack, a wrong reading, a crash, a display glitch.
+name: Hosyond bug report / build help
+description: Report a display, touch, battery, Wi-Fi or USB bridge problem in this port.
 title: "[Bug] "
 labels: ["bug"]
 body:
-  - type: markdown
-    attributes:
-      value: |
-        Thanks for building PocketOBI! A few details up front usually let us pin the problem down in one reply instead of five. The most common cause of a fresh build not reading a pack is DATA/ENABLE swapped or the pull-up value — the fields below cover both.
-
   - type: textarea
-    id: what-happens
+    id: problem
     attributes:
-      label: What happens
-      description: What did you expect, and what did you get instead?
-      placeholder: e.g. "The screen shows 'No pack' whenever I connect a battery. I expected it to read the cells."
+      label: What happened?
+      description: Include what you expected, what you saw, and steps to reproduce it.
     validations:
       required: true
-
-  - type: dropdown
-    id: fw-version
+  - type: input
+    id: release
     attributes:
-      label: Firmware version
-      description: Shown on the Info screen (e.g. "v2.1.0"). If you're not on the latest, please try updating first — many read issues are already fixed.
-      options:
-        - v2.1.0 (latest)
-        - v1.0.0
-        - Built from source (main / a branch)
-        - Older / not sure
+      label: Release tag or commit
+      description: Use the Git release tag (for example hosyond-v1.1.0). The inherited About version identifies upstream code.
     validations:
       required: true
-
   - type: dropdown
-    id: board
+    id: environment
     attributes:
-      label: How is it built?
+      label: PlatformIO environment
       options:
-        - The PocketOBI PCB
-        - Breadboard
-        - My own board / perfboard
+        - hosyond-cyd28-wifi
+        - hosyond-cyd28
+        - hosyond-cyd28-diagnostic
         - Other
     validations:
       required: true
-
   - type: input
-    id: pullups
+    id: board
     attributes:
-      label: Pull-up resistor values
-      description: On the DATA and ENABLE lines. On breadboard, 4.7k can be marginal — 470Ω is more reliable.
-      placeholder: e.g. "470Ω on both" or "4.7k on both"
-
+      label: Board model / revision
+      placeholder: Hosyond LCDWiki E32R28T ESP32-32E
+    validations:
+      required: true
   - type: input
     id: pack
     attributes:
-      label: Battery pack(s) affected
-      description: Model and rough age. Older ~2013-2016 packs (no "B" suffix, no LED gauge) read intermittently by design.
-      placeholder: e.g. "BL1850B, 2021" or "BL1830 (no B), ~2016"
-
+      label: Makita pack model
+      placeholder: BL1850B
   - type: textarea
-    id: screen
+    id: wiring
     attributes:
-      label: What the screen shows
-      description: The exact text/values — e.g. "No pack", "LXT ?", a comm error, cell voltages that look wrong.
-      placeholder: e.g. "Reads once showing 'LXT ?' and cells OK, then 'no data' on the next read."
-
+      label: Wiring and power
+      description: Describe DATA/ENABLE GPIOs, adapter contact functions, ground, resistor values and USB or single-cell power. Photos help.
   - type: textarea
-    id: serial
+    id: logs
     attributes:
-      label: Serial / COMM_DEBUG output
-      description: |
-        Optional but very helpful. In the sketch, set `COMM_DEBUG` to `1`, reflash, open the serial monitor at 115200, and paste what it prints when you read a pack. It shows the `present` flag and raw bytes — that tells us instantly whether it's "no presence at all" (wiring/pull-up) vs "presence but garbage" (contact/timing).
-      render: shell
-
-  - type: markdown
-    attributes:
-      value: |
-        **A photo of your wiring helps a lot** — you can drag an image straight into the "What happens" box above.
-
+      label: Logs / screenshots
+      description: For standalone battery logs use hosyond-cyd28-diagnostic and Serial Monitor at 115200. Omit passwords and personal network details.
+      render: text
   - type: checkboxes
     id: checks
     attributes:
-      label: Before you post
+      label: Checks
       options:
-        - label: I checked my wiring against the pinout in HARDWARE.md, identifying pins by the ESP32 silkscreen label (GPIO3 = DATA, GPIO4 = ENABLE), not by physical position.
-        - label: I tried removing and re-seating the pack and reading again.
-        - label: I searched existing issues for the same problem.
+        - label: I checked the README wiring for this board (IO23 DATA, IO27 ENABLE), not the original ESP32-C3 pinout.
+        - label: I checked that the battery is connected and shared GND/pull-ups are present.
+        - label: I removed the microSD card and disconnected other SPI accessories.

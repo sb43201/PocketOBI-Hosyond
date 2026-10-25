@@ -1,11 +1,11 @@
-# Wi-Fi feature branch
+# Wi-Fi setup and browser controls
 
-Branch: `codex/wifi-manager`. Based on the frozen `hosyond-v1.0.0` release.
-The tagged release and main branch remain available without Wi-Fi.
+Hosyond Wi-Fi release 1.1.0, built on the original `hosyond-v1.0.0` baseline.
+The older tag remains available; current main defaults to the Wi-Fi build.
 
 ## Build and upload
 
-This branch defaults to **hosyond-cyd28-wifi**:
+The current release defaults to **hosyond-cyd28-wifi**:
 
 ```powershell
 pio run -e hosyond-cyd28-wifi
@@ -60,7 +60,7 @@ Tap **Close Wi-Fi setup** to close the portal early. Tap the title bar to return
 to Settings. The existing Settings rows keep their original sizes and touch
 zones; there is no extra row hidden under calibration.
 
-The Wi-Fi tab and information text are currently English, including when another
+The Wi-Fi tab and information text are English, including when another
 language is selected for the inherited PocketOBI screens.
 
 ## Browser functions

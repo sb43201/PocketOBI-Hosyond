@@ -1,5 +1,8 @@
-blank_issues_enabled: false
+blank_issues_enabled: true
 contact_links:
-  - name: General questions & showing off your build
-    url: https://www.youtube.com/channel/UCQL_-pcIEkrDPyljl3QPzcw
-    about: For general chat, questions, or to show a pack you rescued, the YouTube channel is the friendliest place. Use the issue templates here for bugs and feature ideas.
+  - name: Hosyond user manual
+    url: https://github.com/sb43201/PocketOBI-Hosyond/blob/main/USER_MANUAL.md
+    about: Wiring, touch calibration, Wi-Fi setup and USB bridge instructions for this port.
+  - name: Original PocketOBI project
+    url: https://github.com/TheRepairforge/PocketOBI
+    about: Upstream project and attribution. Report Hosyond-specific issues in this repository.

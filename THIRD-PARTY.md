@@ -181,7 +181,7 @@ DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
 
-## Wi-Fi feature branch additions
+## Wi-Fi release additions
 
 `web_interface.h` is adapted from the owner's earlier local OBI ESP32 project,
 appositeit/obi-esp32. Its MIT notice (Copyright 2025 Jem, based on Open Battery
